@@ -292,7 +292,7 @@
           cursor: pointer;
           transition: background 0.08s;
         }
-        .ts-item:hover { background: var(--ts-item-hover-bg); }
+        .ts-item:hover { }
         .ts-item.ts-selected { background: var(--ts-item-selected-bg); }
 
         /* ── Favicon ───────────────────────────────────────────────────────── */
