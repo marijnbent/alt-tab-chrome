@@ -33,11 +33,78 @@ jobs:
           name: extension-package
           path: dist/*.zip
 
-      - name: Create GitHub release
-        if: startsWith(github.ref, 'refs/tags/v')
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: extension-package
+          path: dist
+
+      - name: Create or update GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" dist/*.zip \
-            --generate-notes \
-            --verify-tag
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" dist/*.zip --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" dist/*.zip \
+              --generate-notes \
+              --verify-tag
+          fi
+
+  publish_cws:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: extension-package
+          path: dist
+
+      - name: Check Chrome Web Store configuration
+        id: cws
+        env:
+          CWS_EXTENSION_ID: ${{ vars.CWS_EXTENSION_ID }}
+          CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
+          CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+        run: |
+          if [ -n "${CWS_EXTENSION_ID}" ] && [ -n "${CWS_PUBLISHER_ID}" ] && [ -n "${CWS_CLIENT_ID}" ] && [ -n "${CWS_CLIENT_SECRET}" ] && [ -n "${CWS_REFRESH_TOKEN}" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Chrome Web Store publish skipped: missing repo vars or secrets."
+          fi
+
+      - name: Resolve extension package path
+        id: package
+        if: steps.cws.outputs.ready == 'true'
+        run: echo "zip_path=$(find dist -maxdepth 1 -name '*.zip' | head -n 1)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to Chrome Web Store
+        if: steps.cws.outputs.ready == 'true'
+        env:
+          CWS_EXTENSION_ID: ${{ vars.CWS_EXTENSION_ID }}
+          CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
+          CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+          CWS_ZIP_PATH: ${{ steps.package.outputs.zip_path }}
+        run: node scripts/publish-cws.mjs
