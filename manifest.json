@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tab Switcher",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Alt+Tab style tab switcher for Chrome",
   "permissions": ["tabs", "storage"],
   "icons": {
