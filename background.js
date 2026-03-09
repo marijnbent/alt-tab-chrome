@@ -1,12 +1,18 @@
 chrome.commands.onCommand.addListener((command) => {
   if (command === 'cycle-tabs' || command === 'cycle-tabs-back') {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        chrome.tabs.sendMessage(tabs[0].id, {
-          type: 'CYCLE_TABS',
-          reverse: command === 'cycle-tabs-back'
-        });
-      }
+      const activeTab = tabs[0];
+      if (!activeTab?.id) return;
+
+      chrome.tabs.sendMessage(activeTab.id, {
+        type: 'CYCLE_TABS',
+        reverse: command === 'cycle-tabs-back'
+      }, () => {
+        if (chrome.runtime.lastError) {
+          // Some pages do not host our content script, such as Chrome internal pages.
+          return;
+        }
+      });
     });
   }
 });
@@ -21,7 +27,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           title: t.title || t.url,
           favIconUrl: t.favIconUrl || '',
           url: t.url,
-          active: t.active
+          active: t.active,
+          audible: Boolean(t.audible)
         }));
       sendResponse(sorted);
     });

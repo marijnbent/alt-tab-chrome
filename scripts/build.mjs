@@ -16,6 +16,9 @@ const filesToPackage = [
   'manifest.json',
   'background.js',
   'content.js',
+  'popup.html',
+  'popup.js',
+  'icons',
 ];
 
 rmSync(distDir, { recursive: true, force: true });
@@ -27,7 +30,7 @@ for (const file of filesToPackage) {
     throw new Error(`Missing required file: ${file}`);
   }
 
-  cpSync(sourcePath, join(stagingDir, file));
+  cpSync(sourcePath, join(stagingDir, file), { recursive: true });
 }
 
 writeFileSync(join(distDir, '.gitkeep'), '');

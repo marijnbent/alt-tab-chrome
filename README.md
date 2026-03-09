@@ -2,6 +2,16 @@
 
 Chrome extension that adds an Alt+Tab style tab switcher.
 
+## Usage
+
+- Click the extension icon in Chrome to open the built-in shortcut help popup.
+- In the popup, set the switcher theme to `System`, `Light`, or `Dark`. `System` follows Chrome and macOS appearance.
+- Press `Option`+`Tab` to open the switcher and move forward through recent tabs.
+- Press `Option`+`Shift`+`Tab` to move backward.
+- While the switcher is open, use `ArrowUp` and `ArrowDown` to change the selection.
+- Release `Option` to switch to the selected tab.
+- Press `Esc` to close the switcher without switching tabs.
+
 ## Development
 
 1. Load the extension as unpacked in Chrome from this directory.
